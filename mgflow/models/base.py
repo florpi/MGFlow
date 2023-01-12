@@ -21,7 +21,9 @@ class BaseModel(ABC, pl.LightningModule):
         pass
 
     @classmethod
-    def from_folder(cls, path_to_model: str)->"BaseModel":
+    def from_folder(
+        cls, path_to_model: str, dm,
+    )->"BaseModel":
         """Load model from folder
 
         Args:
@@ -40,6 +42,10 @@ class BaseModel(ABC, pl.LightningModule):
         weights_dict = torch.load(
             files[file_idx],
             map_location=torch.device('cpu'),
+        )
+        model.build_neural_net(
+            params_train=dm.train_dataset.targets,
+            data_train=dm.train_dataset.data,
         )
         model.load_state_dict(weights_dict['state_dict'])
         return model
@@ -118,6 +124,5 @@ class BaseModel(ABC, pl.LightningModule):
         self.log(
             "test_loss",
             loss,
-            batch_size=self.batch_size,
         ) 
         return loss

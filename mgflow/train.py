@@ -2,6 +2,8 @@ from argparse import ArgumentParser
 from pathlib import Path
 import matplotlib.pyplot as plt
 import tensorflow
+import ctypes
+libgcc_s = ctypes.CDLL('libgcc_s.so.1')
 from mgflow.data.datamodules.pdf import PDFDataModule
 from mgflow.models.density_estimator import DEModel
 from pytorch_lightning import Trainer, seed_everything

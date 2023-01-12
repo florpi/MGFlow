@@ -8,7 +8,7 @@ class PDFDataModule(BaseDataModule):
     def __init__(
         self,
         data_dir: str = "/cosma/home/dp004/dc-davi3/data7space/",
-        batch_size: int = 32,
+        batch_size: int = 64,
         gravity_model: str = "ndgp",
         parameters_to_fit: List[str] = ["Omega_m", "S8", "H0rc"],
         tomographic_bin: int = "1_2_3_4_5",
@@ -48,13 +48,13 @@ class PDFDataModule(BaseDataModule):
         train_size = len(node_idx) - val_size
         return torch.utils.data.random_split(node_idx, [train_size, val_size])
 
-    def setup(self, stage: str = 'fit'):
+    def setup(self, stage: Optional[str] = None):
         """Setup the dataset for training, validation, and testing.
 
         Args:
             stage (str, optional): stage. Defaults to 'train'.
         """
-        if stage == "fit":
+        if stage == "fit" or stage is None:
             node_idx = [idx for idx in self.nodes_idx if idx not in self.test_idx]
             train_idx, val_idx = self.split_nodes(node_idx)
             self.train_dataset = PDFDataset(
@@ -65,7 +65,7 @@ class PDFDataModule(BaseDataModule):
                 data_dir=self.data_dir,
                 node_idx=val_idx,
             )
-        if stage == "test":
+        if stage == "test" or stage is None:
             self.test_dataset = PDFDataset(
                 data_dir=self.data_dir,
                 node_idx=self.test_idx,
