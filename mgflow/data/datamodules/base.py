@@ -25,6 +25,7 @@ class BaseDataModule(ABC, LightningDataModule):
         return DataLoader(
             self.train_dataset,
             batch_size=self.batch_size,
+            shuffle=True,
         )
 
     def val_dataloader(self) -> DataLoader:
@@ -36,6 +37,7 @@ class BaseDataModule(ABC, LightningDataModule):
         return DataLoader(
             self.val_dataset,
             batch_size=self.batch_size,
+            shuffle=True,
         )
 
     def test_dataloader(self) -> DataLoader:
@@ -47,6 +49,7 @@ class BaseDataModule(ABC, LightningDataModule):
         return DataLoader(
             self.test_dataset,
             batch_size=self.batch_size,
+            shuffle=False,
         )
 
     def predict_dataloader(self) -> DataLoader:
@@ -58,4 +61,5 @@ class BaseDataModule(ABC, LightningDataModule):
         return DataLoader(
             self.predict_dataset,
             batch_size=self.batch_size,
+            shuffle=False,
         )

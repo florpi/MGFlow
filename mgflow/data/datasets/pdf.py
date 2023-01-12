@@ -10,7 +10,7 @@ class PDFDataset:
         self,
         node_idx: List[int],
         gravity_model: str = "ndgp",
-        parameters_to_fit: List[str] = ["Omega_m", "S8", "H0rc"],
+        parameters_to_fit: List[str] = ["Om", "S8", "H0rc"],
         tomographic_bin: int = "1_2_3_4_5",
         data_dir: str = "/cosma/home/dp004/dc-davi3/data7space/",
         transform: Optional[Callable] = torch.log,
@@ -60,12 +60,12 @@ class PDFDataset:
                 pdfs += [
                     np.load(
                         self.data_dir
-                        / f"WL_pdfs_{self.gravity_model}_node{node}_tomo[{self.tomographic_bin}]_sl1.npy"
+                        / f"mg_statistics/WL_pdfs/WL_pdfs_{self.gravity_model}_node{node}_tomo[{self.tomographic_bin}]_sl1.npy"
                     )
                 ]
 
         pdfs = np.array(pdfs).reshape((-1, 20))
-        return torch.Tensor(pdfs, dtype=torch.float32)
+        return torch.tensor(pdfs, dtype=torch.float32)
 
     def _load_targets(
         self,
@@ -77,18 +77,18 @@ class PDFDataset:
         """
         if self.gravity_model == "ndgp":
             node_file = "Nodes_Omm-S8-h-H0rc-sigma8-As-B0_LHCrandommaximin_Seed1_Nodes50_Dim4_AddFidTrue_extended_modified.dat"
-            names = (["Om", "S8", "h", "H0rc", "sigma8", "As", "B0"],)
+            names = ["Om", "S8", "h", "H0rc", "sigma8", "As", "B0"]
             gr_limit = 1.17609
         elif self.gravity_model == "ndgp":
             node_file = "Nodes_Omm-S8-h-fR0-sigma8-As-B0_LHCrandommaximin_Seed1_Nodes50_Dim4_AddFidTrue_extended.dat"
-            names = (["Om", "S8", "h", "fR0", "sigma8", "As", "B0"],)
+            names = ["Om", "S8", "h", "fR0", "sigma8", "As", "B0"]
             gr_limit = -6.5
         else:
             return ValueError(f"Gravity model {self.gravity_model} not supported.")
         df = pd.read_csv(
             self.data_dir / f"mg_nodes/{node_file}",
             names=names,
-            usecols=range(6),
+            usecols=range(len(names)),
             skiprows=1,
             sep="\t",
         )
@@ -97,7 +97,7 @@ class PDFDataset:
         df.replace([np.inf, -np.inf], gr_limit, inplace=True)
         # Normalize targets
         normalized_df = (df - df.min()) / (df.max() - df.min())
-        return torch.Tensor(
+        return torch.tensor(
             normalized_df[self.parameters_to_fit].values[self.node_idx],
             dtype=torch.float32,
         )
@@ -109,7 +109,7 @@ class PDFDataset:
             Tuple[torch.Tensor, torch.Tensor]: data and targets
         """
         data = self._load_pdf()
-        targets = self._load_target()
+        targets = self._load_targets()
         assert len(data) == len(targets)
         return data, targets
 
