@@ -48,7 +48,7 @@ class PDFDataModule(BaseDataModule):
         train_size = len(node_idx) - val_size
         return torch.utils.data.random_split(node_idx, [train_size, val_size])
 
-    def setup(self, stage: str):
+    def setup(self, stage: str = 'fit'):
         """Setup the dataset for training, validation, and testing.
 
         Args:

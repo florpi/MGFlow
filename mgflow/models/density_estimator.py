@@ -19,6 +19,20 @@ class DEModel(BaseModel):
         self.scheduler_patience = kwargs.get("scheduler_patience", 5)
         self.scheduler_reduce_factor = kwargs.get("scheduler_reduce_factor", 0.1)
 
+    @staticmethod
+    def add_model_specific_args(parent_parser):
+        parser = parent_parser.add_argument_group("DE") 
+        parser.add_argument("--model", type=str, default='maf')
+        parser.add_argument("--z_score_theta", type=str, default='independent')
+        parser.add_argument("--z_score_x", type=str, default='independent')
+        parser.add_argument("--hidden_features", type=int, default=50)
+        parser.add_argument("--num_transforms", type=int, default=5)
+        parser.add_argument("--learning_rate", type=float, default=0.01)
+        parser.add_argument("--weight_decay", type=float, default=0.01)
+        parser.add_argument("--scheduler_patience", type=int, default=5)
+        parser.add_argument("--scheduler_reduce_factor", type=float, default=0.1)
+        return parent_parser
+
     def build_neural_net(self, params_train: torch.Tensor, data_train: torch.Tensor):
         """ Build the neural network used for density estimation. It needs to be called 
         before training to store the normalization of the input data.
