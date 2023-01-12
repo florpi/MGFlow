@@ -65,6 +65,8 @@ class PDFDataset:
                 ]
 
         pdfs = np.array(pdfs).reshape((-1, 20))
+        #TODO: What should we do with this? Right now there to avoid infs in np.log
+        pdfs[pdfs==0.] = 0.1*np.min(pdfs[pdfs>0.])
         return torch.tensor(pdfs, dtype=torch.float32)
 
     def _load_targets(

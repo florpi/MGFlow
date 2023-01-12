@@ -1,5 +1,6 @@
 from typing import Optional, List, Callable, Tuple
 import torch
+from mgflow.data.datamodules.base import BaseDataModule
 from mgflow.data.datasets.pdf import PDFDataset
 
 
@@ -56,16 +57,16 @@ class PDFDataModule(BaseDataModule):
         if stage == "fit":
             node_idx = [idx for idx in self.nodes_idx if idx not in self.test_idx]
             train_idx, val_idx = self.split_nodes(node_idx)
-            self.train_idx = PDFDataset(
-                self.data_dir,
+            self.train_dataset = PDFDataset(
+                data_dir=self.data_dir,
                 node_idx=train_idx,
             )
-            self.val_idx = PDFDataset(
-                self.data_dir,
+            self.val_dataset = PDFDataset(
+                data_dir=self.data_dir,
                 node_idx=val_idx,
             )
         if stage == "test":
             self.test_dataset = PDFDataset(
-                self.data_dir,
+                data_dir=self.data_dir,
                 node_idx=self.test_idx,
             )
