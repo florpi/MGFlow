@@ -97,8 +97,12 @@ class PDFDataset:
         df.replace([np.inf, -np.inf], gr_limit, inplace=True)
         # Normalize targets
         normalized_df = (df - df.min()) / (df.max() - df.min())
+        parameters = normalized_df[self.parameters_to_fit].to_numpy()[self.node_idx],
+        parameters = np.repeat(parameters, repeats=50, axis=1).reshape(
+            (-1, len(self.parameters_to_fit))
+        )
         return torch.tensor(
-            normalized_df[self.parameters_to_fit].values[self.node_idx],
+            parameters,
             dtype=torch.float32,
         )
 
