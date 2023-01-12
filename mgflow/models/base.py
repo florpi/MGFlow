@@ -73,7 +73,7 @@ class BaseModel(ABC, pl.LightningModule):
             },
         }
 
-    def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor],)->float:
+    def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_index)->float:
         """ Define training step
 
         Args:
@@ -89,7 +89,7 @@ class BaseModel(ABC, pl.LightningModule):
         )  
         return loss
 
-    def validation_step(self, batch: Tuple[torch.Tensor, torch.Tensor],)->float:
+    def validation_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_index)->float:
         """ Define validation step
 
         Args:
@@ -105,7 +105,7 @@ class BaseModel(ABC, pl.LightningModule):
         )
         return loss
 
-    def test_step(self, batch: Tuple[torch.Tensor, torch.Tensor],)->float:
+    def test_step(self, batch: Tuple[torch.Tensor, torch.Tensor],batch_index)->float:
         """ Define test step
 
         Args:
