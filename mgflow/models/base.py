@@ -7,54 +7,62 @@ import pytorch_lightning as pl
 import torch
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
+
 class BaseModel(ABC, pl.LightningModule):
     @abstractmethod
-    def _compute_loss(self, batch: Tuple[torch.Tensor, torch.Tensor],)->float:
-        """ Compute loss function for batch
+    def _compute_loss(
+        self,
+        batch: Tuple[torch.Tensor, torch.Tensor],
+    ) -> float:
+        """Compute loss function for batch
 
         Args:
             batch (Tuple[torch.Tensor, torch.Tensor]): tuple of data, parameters
 
         Returns:
-            float: loss value 
+            float: loss value
         """
         pass
 
     @classmethod
     def from_folder(
-        cls, path_to_model: str, dm,
-    )->"BaseModel":
+        cls,
+        path_to_model: str,
+        dm,
+    ) -> "BaseModel":
         """Load model from folder
 
         Args:
-            path_to_model (str): path to where model and hyperparams are stored 
+            path_to_model (str): path to where model and hyperparams are stored
 
         Returns:
-            BaseModel: model 
+            BaseModel: model
         """
         path_to_model = Path(path_to_model)
-        with open(path_to_model/ 'hparams.yaml') as f:
+        with open(path_to_model / "hparams.yaml") as f:
             hparams = yaml.safe_load(f)
         model = cls(**hparams)
         # find file with lowest validation loss
-        files = list((path_to_model / 'checkpoints').glob('*.ckpt'))
-        file_idx = np.argmin([float(str(file).split('.ckpt')[0].split('=')[-1]) for file in files])
+        files = list((path_to_model / "checkpoints").glob("*.ckpt"))
+        file_idx = np.argmin(
+            [float(str(file).split(".ckpt")[0].split("=")[-1]) for file in files]
+        )
         weights_dict = torch.load(
             files[file_idx],
-            map_location=torch.device('cpu'),
+            map_location=torch.device("cpu"),
         )
         model.build_neural_net(
             params_train=dm.train_dataset.targets,
             data_train=dm.train_dataset.data,
         )
-        model.load_state_dict(weights_dict['state_dict'])
+        model.load_state_dict(weights_dict["state_dict"])
         return model
 
-    def configure_optimizers(self)->Dict:
-        """ Configure optimizer and scheduler
+    def configure_optimizers(self) -> Dict:
+        """Configure optimizer and scheduler
 
         Returns:
-            Dict: dictionary with optimizer and learning rate scheduler config 
+            Dict: dictionary with optimizer and learning rate scheduler config
         """
         optimizer = torch.optim.AdamW(
             self.parameters(),
@@ -79,50 +87,60 @@ class BaseModel(ABC, pl.LightningModule):
             },
         }
 
-    def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_index)->float:
-        """ Define training step
+    def training_step(
+        self, batch: Tuple[torch.Tensor, torch.Tensor], batch_index
+    ) -> float:
+        """Define training step
 
         Args:
-            batch (Tuple[torch.Tensor, torch.Tensor]): batch of data and parameters 
+            batch (Tuple[torch.Tensor, torch.Tensor]): batch of data and parameters
 
         Returns:
-            float: training loss value 
+            float: training loss value
         """
-        loss = self._compute_loss(batch=batch,)
+        loss = self._compute_loss(
+            batch=batch,
+        )
         self.log(
             "train_loss",
             loss,
-        )  
+        )
         return loss
 
-    def validation_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_index)->float:
-        """ Define validation step
+    def validation_step(
+        self, batch: Tuple[torch.Tensor, torch.Tensor], batch_index
+    ) -> float:
+        """Define validation step
 
         Args:
-            batch (Tuple[torch.Tensor, torch.Tensor]): batch of data and parameters 
+            batch (Tuple[torch.Tensor, torch.Tensor]): batch of data and parameters
 
         Returns:
-            float: validation loss value 
+            float: validation loss value
         """
-        loss = self._compute_loss(batch=batch,)
+        loss = self._compute_loss(
+            batch=batch,
+        )
         self.log(
             "val_loss",
             loss,
         )
         return loss
 
-    def test_step(self, batch: Tuple[torch.Tensor, torch.Tensor],batch_index)->float:
-        """ Define test step
+    def test_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_index) -> float:
+        """Define test step
 
         Args:
-            batch (Tuple[torch.Tensor, torch.Tensor]): batch of data and parameters 
+            batch (Tuple[torch.Tensor, torch.Tensor]): batch of data and parameters
 
         Returns:
-            float: test loss value 
+            float: test loss value
         """
-        loss = self._compute_loss(batch=batch,)
+        loss = self._compute_loss(
+            batch=batch,
+        )
         self.log(
             "test_loss",
             loss,
-        ) 
+        )
         return loss

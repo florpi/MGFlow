@@ -2,7 +2,6 @@ import torch
 from typing import Tuple, Optional, Dict, Any
 from torch.distributions import Distribution
 
-
 from sbi import utils as utils
 
 from sbi.inference.posteriors import (
@@ -11,19 +10,25 @@ from sbi.inference.posteriors import (
 )
 from sbi.inference.potentials import posterior_estimator_based_potential
 
-from mgflow.models.base import BaseModel
+import mgflow.models as mg_models
 
-class DEModel(BaseModel):
+
+class DEModel(mg_models.BaseModel):
     def __init__(
         self,
         *args,
         **kwargs,
     ):
-        """ Density estimator model
-        """
+        """Density estimator model"""
         super().__init__()
         self.save_hyperparameters()
         self.density_estimator = utils.posterior_nn(**kwargs)
+        self.embedding_net = kwargs.get('embedding_net', None)
+        if self.embedding_net is not None:
+            self.embedding_net = getattr(
+                mg_models,
+                self.embedding_net,
+            )(n_output=kwargs.get('embedding_dimension'))
         self.learning_rate = kwargs.get("learning_rate", 0.01)
         self.weight_decay = kwargs.get("weight_decay", 0.01)
         self.scheduler_patience = kwargs.get("scheduler_patience", 5)
@@ -31,12 +36,15 @@ class DEModel(BaseModel):
 
     @staticmethod
     def add_model_specific_args(parent_parser):
-        parser = parent_parser.add_argument_group("DE") 
-        parser.add_argument("--model", type=str, default='maf')
-        parser.add_argument("--z_score_theta", type=str, default='independent')
-        parser.add_argument("--z_score_x", type=str, default='independent')
+        parser = parent_parser.add_argument_group("DE")
+        parser.add_argument("--model", type=str, default="maf")
+        parser.add_argument("--embedding_net", type=str, default=None)
+        parser.add_argument("--embedding_dimension", type=int, default=10)
+        parser.add_argument("--z_score_x", type=str, default="none")
+        parser.add_argument("--z_score_y", type=str, default="none")
         parser.add_argument("--hidden_features", type=int, default=50)
         parser.add_argument("--num_transforms", type=int, default=5)
+        parser.add_argument("--num_blocks", type=int, default=2)
         parser.add_argument("--learning_rate", type=float, default=0.001)
         parser.add_argument("--weight_decay", type=float, default=0.01)
         parser.add_argument("--scheduler_patience", type=int, default=5)
@@ -44,12 +52,12 @@ class DEModel(BaseModel):
         return parent_parser
 
     def build_neural_net(self, params_train: torch.Tensor, data_train: torch.Tensor):
-        """ Build the neural network used for density estimation. It needs to be called 
+        """Build the neural network used for density estimation. It needs to be called
         before training to store the normalization of the input data.
 
         Args:
-            params_train (torch.Tensor): training parameters 
-            data_train (torch.Tensor): training data 
+            params_train (torch.Tensor): training parameters
+            data_train (torch.Tensor): training data
         """
         self.x_shape = (1, *data_train.shape[1:])
         self.nn = self.density_estimator(
@@ -57,16 +65,21 @@ class DEModel(BaseModel):
             data_train,
         )
 
-    def _compute_loss(self, batch: Tuple[torch.Tensor, torch.Tensor],)->float:
-        """ Compute the average minus log probability of a batch
+    def _compute_loss(
+        self,
+        batch: Tuple[torch.Tensor, torch.Tensor],
+    ) -> float:
+        """Compute the average minus log probability of a batch
 
         Args:
             batch (Tuple[torch.Tensor, torch.Tensor]): tuple of data, parameters
 
         Returns:
-            float: loss value 
+            float: loss value
         """
         x, y = batch
+        if self.embedding_nn:
+            x = self.embedding_net(x)
         log_prob = self.nn.log_prob(y, x)
         return -log_prob.mean()
 
@@ -85,7 +98,7 @@ class DEModel(BaseModel):
         Specifically, this class offers the following functionality:<br/>
         - correct the calculation of the log probability such that it compensates for the
         leakage.<br/>
-        - reject samples that lie outside of the prior bounds.<br/><br/>        
+        - reject samples that lie outside of the prior bounds.<br/><br/>
 
         Build posterior from the neural density estimator.
         For SNPE, the posterior distribution that is returned here implements the
@@ -95,12 +108,10 @@ class DEModel(BaseModel):
         - reject samples that lie outside of the prior bounds.
         """
         if prior is None:
-            raise ValueError(
-                "You did not pass a prior. You have to pass the prior"
-            )
+            raise ValueError("You did not pass a prior. You have to pass the prior")
         else:
             utils.check_prior(prior)
-        posterior_estimator = self.nn 
+        posterior_estimator = self.nn
         device = next(self.nn.parameters()).device.type
         potential_fn, theta_transform = posterior_estimator_based_potential(
             posterior_estimator=posterior_estimator,

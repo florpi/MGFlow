@@ -5,6 +5,7 @@ import tensorflow
 import ctypes
 libgcc_s = ctypes.CDLL('libgcc_s.so.1')
 from mgflow.data.datamodules.pdf import PDFDataModule
+from mgflow.data.datamodules.map import MapDataModule
 from mgflow.models.density_estimator import DEModel
 from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning.callbacks import ModelCheckpoint
@@ -14,7 +15,12 @@ from pytorch_lightning import loggers as pl_loggers
 
 def fit(args):
     # Setup data
-    dm = PDFDataModule.from_argparse_args(args)
+    if args.data == 'pdf':
+        dm = PDFDataModule.from_argparse_args(args)
+    elif args.data == 'map':
+        dm = MapDataModule.from_argparse_args(args)
+    else:
+        raise ValueError(f"Data type {args.data} not recognised")
     dm.setup()
     # Setup model
     model = DEModel(
@@ -62,6 +68,7 @@ if __name__ == "__main__":
     parser = PDFDataModule.add_argparse_args(parser)
     parser.add_argument("--model_dir", type=str, default=None)
     parser.add_argument("--run_name", type=str, default=None)
+    parser.add_argument("--data", type=str, default='pdf')
     parser = Trainer.add_argparse_args(parser)
     parser = DEModel.add_model_specific_args(parser)
     args = parser.parse_args()
